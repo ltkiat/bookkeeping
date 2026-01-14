@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云同步记账小程序</title>
+<style>
+:root {
+    --bg-color: #f0f2f5;
+    --text-color: #333;
+    --card-bg: #fff;
+    --income-color: #4CAF50;
+    --expense-color: #F44336;
+    --btn-bg: #4CAF50;
+    --btn-hover: #45a049;
+    --danger-color: #FF3B30;
+}
+body.dark {
+    --bg-color: #1e1e1e;
+    --text-color: #f0f0f0;
+    --card-bg: #2c2c2c;
+    --btn-bg: #36A2EB;
+    --btn-hover: #2580c7;
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 10px;
+    transition: background-color 0.3s, color 0.3s;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+}
+form, .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+input, select, button {
+    padding: 10px 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: 0.2s;
+}
+input:focus, select:focus {
+    border-color: var(--btn-bg);
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+button {
+    background-color: var(--btn-bg);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+button:hover {
+    background-color: var(--btn-hover);
+}
+#themeBtn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background-color: #666;
+    color: #fff;
+    cursor: pointer;
+    z-index: 1000;
+}
+#auth {
+    text-align: center;
+    margin-bottom: 15px;
+}
+#auth input {
+    width: 180px;
+    max-width: 45%;
+}
+#auth button {
+    margin: 2px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+th, td {
+    padding: 12px 8px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    transition: background 0.2s;
+}
+th {
+    background-color: rgba(0,0,0,0.05);
+}
+tr:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+.income {
+    color: var(--income-color);
+    font-weight: bold;
+}
+.expense {
+    color: var(--expense-color);
+    font-weight: bold;
+}
+.expense-warning {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+#summary {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+canvas {
+    max-width: 90%;
+    max-height: 300px;
+    margin: 0 auto 20px auto;
+    display: block;
+}
+
+/* 响应式 */
+@media(max-width: 600px){
+    form, .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #auth input {
+        width: 80%;
+    }
+    table, th, td {
+        font-size: 0.85rem;
+    }
+    #themeBtn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+}
+.auth-top {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#auth-menu {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: max-height 0.3s ease;
+}
+
+body.dark .auth-top {
+    background: rgba(44,44,44,0.9);
+}
+body.dark #auth-menu {
+    background: rgba(44,44,44,0.9);
+}
+.auth-top input {
+    width: 120px;
+    padding: 6px;
+    font-size: 0.85rem;
+}
+
+.auth-top button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+.auth-top span {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-left: 5px;
+    color: var(--text-color);
+}
+/* 手机折叠样式 */
+@media(max-width:600px){
+    #auth-menu {
+        flex-direction: column;
+        position: absolute;
+        top: 40px;
+        right: 0;
+        background: rgba(255,255,255,0.95);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        padding: 10px;
+        border-radius: 8px;
+        max-height: 0;
+        overflow: hidden;
+    }
+    #auth-menu.show {
+        max-height: 300px; /* 展开最大高度 */
+    }
+    #auth-toggle {
+        display: inline-block;
+        background: var(--btn-bg);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+    }
+}
+
+</style>
+</head>
+<body>
+
+<h1>云同步记账小程序</h1>
+<div class="toggle" id="themeBtn">切换主题</div>
+
+<!-- 右上角登录区 -->
+<div id="auth" class="auth-top">
+  <div id="auth-menu">
+    <input id="email" placeholder="邮箱">
+    <input id="password" type="password" placeholder="密码">
+    <button id="register">注册</button>
+    <button id="login">登录</button>
+    <button id="logout" style="display:none">登出</button>
+    <span id="currentUser"></span>
+  </div>
+  <button id="auth-toggle" class="auth-toggle" style="display:none;">☰</button>
+</div>
+
+
+<form id="form">
+  <input type="date" id="date" required>
+  <select id="type">
+    <option value="income">收入</option>
+    <option value="expense">支出</option>
+  </select>
+  <select id="category"></select>
+  <input id="amount" type="number" step="0.01" placeholder="金额" required>
+  <input id="desc" placeholder="备注（可选）">
+  <button>添加</button>
+</form>
+
+<table>
+<thead>
+<tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>描述</th><th>操作</th></tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<div id="summary">总收入 0 | 总支出 0 | 余额 0</div>
+<canvas id="chart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+/* Firebase 初始化 */
+const firebaseConfig = {
+  apiKey: "AIzaSyCWXxlYE8ulMdkG4ajRyfYoeiWHR_8H3fM",
+  authDomain: "account-68bb5.firebaseapp.com",
+  projectId: "account-68bb5",
+  appId: "1:900605290286:web:4ffd7e9b14c967c5b47cbf"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* 分类 */
+const incomeCats=["工资","奖金","红包","投资收益","投资收益","其他收入"];
+const expenseCats=["餐饮","交通","娱乐","零食","淘宝","电话费","旅行","投资","保险","购物","房租","其他"];
+let budgets = { "餐饮":1000, "交通":500, "娱乐":300, "购物":500, "房租":2000, "其他":300 };
+
+/* DOM 快捷方法 */
+const $=id=>document.getElementById(id);
+const tbody=$("tbody"),summary=$("summary");
+const catSelect=$("category"),typeSelect=$("type");
+
+/* 用户显示 */
+const authDiv = $("auth");
+const authMenu = $("auth-menu");
+const authToggle = $("auth-toggle");
+
+// 手机小屏点击图标展开/收起
+authToggle.onclick = () => authMenu.classList.toggle("show");
+
+// 登录状态变化
+onAuthStateChanged(auth, user => {
+    if(user){
+        $("logout").style.display="inline";
+        $("register").style.display = $("login").style.display = $("email").style.display = $("password").style.display = "none";
+        $("currentUser").textContent = user.email;
+    } else {
+        $("logout").style.display="none";
+        $("register").style.display = $("login").style.display = $("email").style.display = $("password").style.display = "inline-block";
+        $("currentUser").textContent = "";
+    }
+
+    // 手机小屏显示切换按钮
+    if(window.innerWidth <= 600) authToggle.style.display = "inline-block";
+    else authToggle.style.display = "none";
+});
+
+// 窗口缩放时动态调整
+window.addEventListener("resize", () => {
+    if(window.innerWidth > 600){
+        authMenu.classList.remove("show");
+        authToggle.style.display = "none";
+    } else {
+        authToggle.style.display = "inline-block";
+    }
+});
+
+/* 初始化分类 */
+function loadCats(){
+  catSelect.innerHTML="";
+  (typeSelect.value==="income"?incomeCats:expenseCats).forEach(c=>{
+    const o=document.createElement("option");
+    o.value=o.textContent=c;
+    catSelect.appendChild(o);
+  });
+}
+typeSelect.onchange=loadCats; loadCats();
+
+/* 主题切换 */
+$("themeBtn").onclick=()=>document.body.classList.toggle("dark");
+
+/* 注册 / 登录 / 登出 */
+$("register").onclick=async ()=>{
+  try { await createUserWithEmailAndPassword(auth,$("email").value,$("password").value); alert("注册成功"); }
+  catch(e){ alert("注册失败："+e.message); console.error(e);}
+};
+$("login").onclick=async ()=>{
+  try { await signInWithEmailAndPassword(auth,$("email").value,$("password").value); alert("登录成功"); }
+  catch(e){ alert("登录失败："+e.message); console.error(e);}
+};
+$("logout").onclick=async ()=>{ await signOut(auth); alert("已登出"); };
+
+/* 数据 */
+let entries=[],unsubscribe=null,editingId=null,chart=null;
+
+/* 监听登录状态 */
+onAuthStateChanged(auth,user=>{
+  if(user){
+    $("logout").style.display="inline";
+    $("register").style.display = $("login").style.display = "none";
+
+    // 显示当前登录邮箱
+    if(!$("currentUser")) {
+      const span = document.createElement("span");
+      span.id="currentUser";
+      span.style.margin="0 10px";
+      authDiv.appendChild(span);
+    }
+    $("currentUser").textContent = "已登录: "+user.email;
+
+    if(unsubscribe) unsubscribe();
+    const q=query(collection(db,"users",user.uid,"entries"),orderBy("date","desc"));
+    unsubscribe=onSnapshot(q,snap=>{
+      entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+      render();
+    });
+  }else{
+    $("logout").style.display="none";
+    $("register").style.display = $("login").style.display = "inline";
+    if($("currentUser")) $("currentUser").textContent = "";
+    entries=[]; render();
+  }
+});
+
+/* 添加 / 编辑 */
+$("form").onsubmit=async e=>{
+  e.preventDefault();
+  const user = auth.currentUser;
+  if(!user) return alert("请先登录");
+
+  const data={
+    date:$("date").value,
+    desc:$("desc").value,
+    type:$("type").value,
+    category:$("category").value,
+    amount:+$("amount").value
+  };
+
+  try{
+    if(editingId){
+      await updateDoc(doc(db,"users",user.uid,"entries",editingId),data);
+      editingId=null;
+    }else{
+      await addDoc(collection(db,"users",user.uid,"entries"),data);
+    }
+  }catch(err){
+    console.error(err); alert("添加失败："+err.message); return;
+  }
+
+  e.target.reset(); loadCats();
+};
+
+/* 渲染表格 */
+function render(){
+  tbody.innerHTML="";
+  let inc=0,exp=0,catSum={};
+  expenseCats.forEach(c=>catSum[c]=0);
+
+  entries.forEach(e=>{
+    const overBudget = e.type==="expense" && e.amount + catSum[e.category] > budgets[e.category];
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${e.date}</td>
+      <td>${e.desc}</td>
+      <td class="${e.type}">${e.type==="income"?"收入":"支出"}</td>
+      <td>${e.category}${overBudget?" ⚠️超预算":""}</td>
+      <td class="${e.type}">${e.amount.toFixed(2)}</td>
+      <td>
+        <button onclick="edit('${e.id}')">编辑</button>
+        <button onclick="del('${e.id}')">删除</button>
+      </td>`;
+    tbody.appendChild(tr);
+
+    if(e.type==="income") inc+=e.amount;
+    else { exp+=e.amount; catSum[e.category]+=e.amount; if(overBudget) console.warn(`⚠️ 分类 ${e.category} 超预算`); }
+  });
+
+  summary.textContent=`总收入 ￥${inc} | 总支出 ￥${exp} | 余额 ￥${inc-exp}`;
+  draw(catSum);
+}
+
+/* 绘制饼图 */
+function draw(data){
+  if(chart) chart.destroy();
+  chart=new Chart($("chart"),{
+    type:"pie",
+    data:{
+      labels:expenseCats,
+      datasets:[{data:expenseCats.map(c=>data[c]||0), backgroundColor:["#FF6384","#36A2EB","#FFCE56","#4BC0C0","#9966FF","#FF9F40"]}]
+    }
+  });
+}
+
+/* 删除 / 编辑操作 */
+window.del=async id=>{
+  if(!auth.currentUser) return alert("请先登录");
+  if(confirm("确认删除？")) await deleteDoc(doc(db,"users",auth.currentUser.uid,"entries",id));
+};
+
+window.edit=id=>{
+  const e=entries.find(x=>x.id===id);
+  $("date").value=e.date;
+  $("desc").value=e.desc;
+  $("type").value=e.type;
+  loadCats();
+  $("category").value=e.category;
+  $("amount").value=e.amount;
+  editingId=id;
+};
+const data={
+  date:$("date").value,
+  desc:$("desc").value || "",   // 如果没填，默认空字符串
+  type:$("type").value,
+  category:$("category").value,
+  amount:+$("amount").value
+};
+
+</script>
+</body>
+</html>
